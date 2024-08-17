@@ -1,0 +1,12 @@
+{
+  "name": "John Doe",
+  "age": 30,
+  "isStudent": false,
+  "skills": ["lisp", "python", "javascript"],
+  "address": {
+    "street": "123 Main St",
+    "city": "Anytown",
+    "postalCode": "12345"
+  }
+}
+
