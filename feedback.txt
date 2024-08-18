@@ -1,0 +1,55 @@
+- Link the JSON spec at the top of the file 
+- Fix indentation
+- End predicated with p or -p, not ? like scheme
+- When preparing your final submission, do not include commented out code
+- Remove format call from error, error already takes a format control and arguments
+- (mapcar #'code-char ...) at read time using #.
+  - Alternatively, use named characters:
+    (member (scanner-peek scanner) '(#\Space #\Tab #\Linefeed #\Return))
+- No need to put a newline after the loop macro name
+- Remove progn from cond; also CASE works better than COND. Use char= to compare characters.
+- One blank line between top level forms, not two.
+- Use a struct or a list (with a list, you can use FIRST and SECOND); property list is unnecessary here. 
+- Scanner is a leaky abstraction.
+- Lexical variable names can be descriptive -- like CHARACTER instead of CHR.
+- Same thing for skip-ws (can be whitespace, although another person suggested I just leave a comment 
+  for those that don't know what ws means)
+- scanner-advance doesn't work -- in the line (setf (getf scanner :cursor) (+ cur n)), I forgot to include
+  (min (+ cur n) (length (getf scanner :stream)))
+- Comments: 
+  - at least 2, explaining what ws and kvp mean.
+
+Nice to haves
+- fast (length): Do some microbenchmarking to see if the performance improves if we give a type hint 
+  that the string in the scanner should be laid out in sequence like a vector.
+  - match function uses O(n) memory when it could be using O(1) memory (ignoring the input). Can exploit this
+    by comparing the strings char by char in lockstep.
+- Test for the sad path and respond gracefully
+- Define a constant for the [0-9-] char set so I don't have to coerce every time
+
+Things I thought of:
+- Looking at the JSON spec: 
+      JSON-text = ws value ws
+
+   These are the six structural characters:
+
+      begin-array     = ws %x5B ws  ; [ left square bracket
+
+      begin-object    = ws %x7B ws  ; { left curly bracket
+
+      end-array       = ws %x5D ws  ; ] right square bracket
+
+      end-object      = ws %x7D ws  ; } right curly bracket
+
+      name-separator  = ws %x3A ws  ; : colon
+
+      value-separator = ws %x2C ws  ; , comma
+  - Can probably write some helper function like (wrap-whitespace) which will parse each token in a whitespace 
+    insensitive manner. Could maybe even use a lexer so that I can do token generation in a single pass.
+
+
+See also:
+- https://codereview.stackexchange.com/a/180297, particularly
+  - successful string parsing of unicode (the test cases)
+- https://www.crockford.com/mckeeman.html -- the JSON grammar at the bottom of the page.
+  - this would greatly simplify my parser. it's even written so that FIRST is quite easy to identify.
