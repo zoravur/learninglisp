@@ -2,6 +2,40 @@
 ;;; https://datatracker.ietf.org/doc/html/rfc8259
 ;;; Usage: (parse (mk-scanner (uiop:read-file-string "johndoe.json")))
 
+;;; DFA class.
+
+;(defun subsetp (list1 list2)
+;  (every (lambda (item)
+;           (member item list2))
+;         list1))
+
+
+(defclass dfa () 
+  ((Q :initarg :Q :reader dfa-Q)
+   (S :initarg :S :reader dfa-S)
+   (d :initarg :d :reader dfa-d)
+   (q :initarg :q :reader dfa-q)
+   (F :initarg :F :reader dfa-F)))
+
+(defun cartesian-product (&rest end)
+  (let (
+  (if end
+    (let ((prod (apply #'cartesian-product (cdr end))))
+      (loop 
+        for x in (car end)
+        nconc (loop for y in prod
+                    collect (cons x y))))
+    '(nil)))
+
+(defvar validate-dfa (Q S d q F)
+  (and (member q Q)
+       (subsetp F Q)
+       (every (lambda (args)
+                (member (apply d args) Q))
+              (cartesian-product Q S))))
+
+
+
 ;;; Scanner class.
 (defun mk-scanner (s) (list :stream s :cursor 0))
 
@@ -26,6 +60,12 @@
 ;;; Can maybe support newlines like row:col, e.g. 5:60
 (defun scanner-position (scanner)
   (getf scanner :cursor))
+
+;;; Simplified Maximal Munch algorithm
+(defun mm-step (scanner dfa)
+
+
+
 
 
 
