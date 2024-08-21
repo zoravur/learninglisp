@@ -9,7 +9,6 @@
 ;           (member item list2))
 ;         list1))
 
-
 (defclass dfa () 
   ((Q :initarg :Q :reader dfa-Q)
    (S :initarg :S :reader dfa-S)
@@ -27,12 +26,24 @@
                     collect (cons x y))))
     '(nil)))
 
+
+;;; TODO replace with an implementation that does 
+;;; not evaluate the entire cartesian-product
+;;; if an error is found earlier. To do this,
+;;; use (comb-n-way (list (list-to-iter Q) (list-to-iter S)))
+;;; define also (iter-and itr) which will return false as soon
+;;; as the first value of itr is false
 (defvar validate-dfa (Q S d q F)
   (and (member q Q)
        (subsetp F Q)
        (every (lambda (args)
                 (member (apply d args) Q))
               (cartesian-product Q S))))
+
+;(defvar create-dfa (states matrix)
+;  (let (ht hash-table
+
+
 
 
 

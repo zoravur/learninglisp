@@ -1,9 +1,20 @@
+;(defmacro delay (iterator-call)
+;  `(lambda () ,expr))
+
+;(defun force (delayed-iterator-call)
+;  (funcall delayed))
+
 (defun range (lo hi)
   (let ((i lo))
     (lambda ()
-      (if (< i hi)
-      (values (prog1 i (setf i (1+ i))) nil)
-      (values nil t)))))
+      (if (or (< i hi) (equal hi nil))
+          (values (prog1 i (setf i (1+ i))) nil)
+          (values nil t)))))
+
+(defun counter (start)
+  (let ((i start))
+    (lambda ()
+      (values (prog1 i (setf i (1+ i))) nil))))
 
 (defun take (iterator n)
   (let ((next (range 0 n)))
@@ -111,6 +122,9 @@
                      (split-cons (car results)))))))))
       #'clone)))
 
+;(defmacro make-cloner (iterator-call)
+;  `(lambda () (iterator-call))) 
+
 ;(defun clone (iterator)
 ;  (let ((cp iterator)
 ;        (results (list nil)))
@@ -121,22 +135,74 @@
 
 ;;; this is just for testing, make it as big as 
 ;;; necessary for all practical purposes
-(defun counter ()
-  (map-iter (lambda (i) (print i) i) (range 0 5)))
+;(defun counter ()
+;  (map-iter (lambda (i) (print i) i) (range 0 5)))
 
 ;;; This is a shared counter. It takes reference to some iterator object as another iterator,
 ;;; and increments that iterator and returns the value
 (defun shared-counter (other)
   (lambda () (funcall other)))
 
-
-
-;(defun comb-2-way (i j)
-;  (let ((r *results*)) (chain (map-iter (lambda (x) (map-iter (lambda (y) (list x y)) (clone j r))) i))))
-
 (defun comb-2-way (i j)
   (let ((clone-j (make-cloner j))) (chain (map-iter (lambda (x) (map-iter (lambda (y) (cons x y)) (funcall clone-j))) i))))
 
 (defun comb-n-way (list-of-iters)
   (reduce #'comb-2-way list-of-iters :from-end t :initial-value (repeat nil 1)))
+
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; NONE OF THESE WORK ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;; comb-2-way-infinite accepts (delay it)
+(defun comb-2-way-infinite0 (i j)
+  (let ((clone-j (make-cloner j)))
+    (chain (map-iter (lambda (n) 
+                       (let ((clone-i (make-cloner i)))
+                       (chain (take (map-iter 
+                                (lambda (x) 
+                                  (take (map-iter 
+                                          (lambda (y) (cons x y)) 
+                                          (funcall clone-j)) n)) 
+                                (funcall clone-i)) n))))
+                     (counter 1)))))
+
+;;; comb-2-way-infinite accepts (delay it)
+(defun comb-2-way-infinite1 (i j)
+  (let ((clone-i (make-cloner i)) (clone-j (make-cloner j)))
+    (chain (map-iter (lambda (x) 
+                       (chain (map-iter 
+                                (lambda (n) 
+                                  (take (map-iter 
+                                          (lambda (y) (cons x y)) 
+                                          (funcall clone-j)) n)) 
+                                (counter 1))))
+                     (funcall clone-i)))))
+
+(defun comb-2-way-infinite2 (i j)
+  (let ((clone-i (make-cloner i)) (clone-j (make-cloner j)))
+    (chain (map-iter (lambda (n) 
+                       (chain (take (map-iter 
+                                (lambda (x) 
+                                  (map-iter 
+                                          (lambda (y) (cons x y)) 
+                                          (funcall clone-j))) (funcall clone-i)) 
+                                n)))
+                     (counter 1)))))
+
+
+(defun comb-2-way-infinite3 (i j)
+  (let ((clone-i (make-cloner i)) (clone-j (make-cloner j)))
+    (chain (map-iter (lambda (n) 
+                       (take (chain (map-iter (lambda (x) 
+                                                (map-iter 
+                                                  (lambda (y) (cons x y)) 
+                                                  (funcall clone-j)))
+                                              (funcall clone-i)))
+                                n))
+                     (counter 1)))))
+
 
