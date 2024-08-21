@@ -8,7 +8,8 @@
 (defun take (iterator n)
   (let ((next (range 0 n)))
     (lambda () 
-      (values (funcall iterator) (nth-value 1 (funcall next))))))
+      (multiple-value-bind (value stopiter) (funcall iterator)
+        (values value (or (nth-value 1 (funcall next)) stopiter))))))
 
 (defun forever (val)
   (lambda () (values val nil)))
@@ -16,11 +17,29 @@
 (defun repeat (val n)
   (take (forever val) n))
 
+;;; stop-p should be a predicate either returning t or nil depending 
+;;; on whether it is time to stop the iterator.
+(defun take-while (iterator stop-p)
+  (lambda () (multiple-value-bind (value stopiter) (funcall iterator)
+               (values value (or (funcall stop-p value) stopiter)))))
+
+;;;
+(defun iter-read ()
+  (take-while (lambda () (read *standard-input* nil :eof)) (lambda (result) (equal result :eof))))
+
+(defun iter-read-simple ()
+  (lambda ()
+    (let ((result (read *standard-input* nil :eof)))
+      (values result (equal result :eof)))))
+
 (defun iter-to-list (iterator)
   (multiple-value-bind (val stopiter) (funcall iterator)
     (if stopiter
       nil
       (cons val (iter-to-list iterator)))))
+
+(defun empty (iterator)
+  (loop while (not (nth-value 1 (funcall iterator)))))
 
 (defun list-to-iter (lst)
   (let ((cur lst))
@@ -73,41 +92,51 @@
                    (values value stop)))))
       (lambda () (next)))))
 
+
+;(defvar *results* (list nil))
+
+(defun split-cons (cons-cell) (values (car cons-cell) (cdr cons-cell)))
+
+(defun make-cloner (iterator)
+  (let ((results-for-iterator (list nil)))
+    (labels ((clone ()
+      (let ((cp iterator)
+            (results results-for-iterator))
+        (lambda ()
+          (let ((elemlist (cdr results)))
+            (if elemlist 
+              (multiple-value-prog1 (split-cons (car elemlist)) (setf results elemlist))
+              (progn (nconc results (list (multiple-value-call #'cons (funcall cp)))) 
+                     (setf results (cdr results)) 
+                     (split-cons (car results)))))))))
+      #'clone)))
+
 ;(defun clone (iterator)
 ;  (let ((cp iterator)
-;        (results '())
-;        (len 0)
+;        (results (list nil)))
+;    (lambda ()
+;      (let ((elemlist (cdr results)))
+;        (if elemlist (multiple-value-prog1 (split-cons (car elemlist)) (setf results elemlist))
+;          (progn (nconc results (list (multiple-value-call #'cons (funcall cp)))) (setf results (cdr results)) (split-cons (car results))))))))
 
 ;;; this is just for testing, make it as big as 
 ;;; necessary for all practical purposes
 (defun counter ()
-  (lambda () (range 0 1000000)))
+  (map-iter (lambda (i) (print i) i) (range 0 5)))
 
-(defun shared-counter (counter)
-  (lambda ()
+;;; This is a shared counter. It takes reference to some iterator object as another iterator,
+;;; and increments that iterator and returns the value
+(defun shared-counter (other)
+  (lambda () (funcall other)))
 
 
+
+;(defun comb-2-way (i j)
+;  (let ((r *results*)) (chain (map-iter (lambda (x) (map-iter (lambda (y) (list x y)) (clone j r))) i))))
 
 (defun comb-2-way (i j)
-  (chain (map-iter (lambda (x) (map-iter (lambda (y) (list x y)) j)) i)))
-; (chain (map-iter (lambda (x) (map-iter (lambda (y) (list x y)) it2)) it1)))
+  (let ((clone-j (make-cloner j))) (chain (map-iter (lambda (x) (map-iter (lambda (y) (cons x y)) (funcall clone-j))) i))))
 
-; (chain (map-iter (lambda (x) (map-iter (lambda (y) (list x y)) it2)) it1)))
-
-;(defvar it1 (range 0 5))
-;(defvar it2 (range 5 10))
-;(defvar b (chain (map-iter (lambda (x) (map-iter (lambda (y) (list x y)) it1)) it2)))
-;(defvar c (chain (map-iter (lambda (x) (map-iter (lambda (y) (list x y)) (forever it1))) it2)))
-;(defun iter-cells ()
-;  (let* ((letter #\a)
-;         (num 0) 
-;         (letters (list)) 
-;         (nums (list))
-;         (l-stub letters)
-;         (n-stub nums))
-;    (lambda ()
-;      (if (not (equal (car letters) #\a))
-;        (progn (push #\a letters) (nums 
-
-
+(defun comb-n-way (list-of-iters)
+  (reduce #'comb-2-way list-of-iters :from-end t :initial-value (repeat nil 1)))
 
