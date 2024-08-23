@@ -1,0 +1,29 @@
+       Self        Total        Cumul
+  Nr  Count     %  Count     %  Count     %    Calls  Function
+------------------------------------------------------------------------
+   1    243  24.3    707  70.7    243  24.3        -  (LAMBDA NIL :IN CHAIN)
+   2    154  15.4    837  83.7    397  39.7        -  (LAMBDA NIL :IN ZIP)
+   3    139  13.9    164  16.4    536  53.6        -  (LAMBDA NIL :IN MAKE-CLONER)
+   4    122  12.2   1052 105.2    658  65.8        -  (LAMBDA NIL :IN TAKE)
+   5    107  10.7    107  10.7    765  76.5        -  (LAMBDA NIL :IN LIST-TO-ITER)
+   6     95   9.5     95   9.5    860  86.0        -  (LAMBDA NIL :IN RANGE)
+   7     78   7.8     78   7.8    938  93.8        -  "#<code id=0 [0] {5210000F}>"
+   8     25   2.5     25   2.5    963  96.3        -  SPLIT-CONS
+   9     19   1.9     19   1.9    982  98.2        -  "foreign function pthread_sigmask"
+  10     12   1.2   1002 100.2    994  99.4        -  EMPTY
+  11      0   0.0    997  99.7    994  99.4        -  "Unknown component: #x52CE06F8"
+  12      0   0.0    997  99.7    994  99.4        -  SB-INT:SIMPLE-EVAL-IN-LEXENV
+  13      0   0.0    997  99.7    994  99.4        -  EVAL
+  14      0   0.0    997  99.7    994  99.4        -  INTERACTIVE-EVAL
+  15      0   0.0    997  99.7    994  99.4        -  SB-IMPL::REPL-FUN
+  16      0   0.0    997  99.7    994  99.4        -  (FLET "LAMBDA0" :IN "SYS:SRC;CODE;TOPLEVEL.LISP")
+  17      0   0.0    997  99.7    994  99.4        -  SB-IMPL::%WITH-REBOUND-IO-SYNTAX
+  18      0   0.0    997  99.7    994  99.4        -  SB-IMPL::TOPLEVEL-REPL
+  19      0   0.0    997  99.7    994  99.4        -  SB-IMPL::TOPLEVEL-INIT
+  20      0   0.0    997  99.7    994  99.4        -  (FLET SB-UNIX::BODY :IN SAVE-LISP-AND-DIE)
+  21      0   0.0    997  99.7    994  99.4        -  (FLET "WITHOUT-INTERRUPTS-BODY-14" :IN SAVE-LISP-AND-DIE)
+  22      0   0.0    997  99.7    994  99.4        -  (LABELS SB-IMPL::RESTART-LISP :IN SAVE-LISP-AND-DIE)
+  23      0   0.0     19   1.9    994  99.4        -  "foreign function interrupt_handle_pending"
+  24      0   0.0     19   1.9    994  99.4        -  "foreign function handle_trap"
+------------------------------------------------------------------------
+          3   0.3                                     elsewhere
