@@ -1,9 +1,3 @@
-;(defmacro delay (iterator-call)
-;  `(lambda () ,expr))
-
-;(defun force (delayed-iterator-call)
-;  (funcall delayed))
-
 (defun range (lo hi)
   (let ((i lo))
     (lambda ()
@@ -34,7 +28,6 @@
   (lambda () (multiple-value-bind (value stopiter) (funcall iterator)
                (values value (or (funcall stop-p value) stopiter)))))
 
-;;;
 (defun iter-read ()
   (take-while (lambda () (read *standard-input* nil :eof)) (lambda (result) (equal result :eof))))
 
@@ -49,7 +42,7 @@
       nil
       (cons val (iter-to-list iterator)))))
 
-(defun empty (iterator)
+(defun empty-iter (iterator)
   (loop while (not (nth-value 1 (funcall iterator)))))
 
 (defun list-to-iter (lst)
@@ -149,60 +142,65 @@
 (defun comb-n-way (list-of-iters)
   (reduce #'comb-2-way list-of-iters :from-end t :initial-value (repeat nil 1)))
 
+(defun zip (i j)
+  (lambda () 
+    (multiple-value-bind (x stopi) (funcall i)
+      (multiple-value-bind (y stopj) (funcall j)
+        (values (cons x y) (or stopi stopj))))))
 
+(defun accumulate (iterator)
+  (let ((clone-it (make-cloner iterator)))
+    (map-iter (lambda (n) (take (funcall clone-it) n)) (counter 0))))
 
+(defun accumulate-rev (iterator)
+  (let ((results nil))
+    (map-iter (lambda (x) (push x results) (list-to-iter results)) iterator)))
 
+#|
 
+Idea: Do the triangle trick in order to read off every element in an infinite cartesian product,
+like, (1, 1) (2, 1) (1, 2) (3, 1), (2, 2), (1, 3), and so on.
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; NONE OF THESE WORK ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+In order to do this, we need to iterate x values in reverse, going from highest down to lowest. 
+We also need to iterate the y values forward, going from lowest to highest.
 
+The latter is easy, (chain (accumulate y))
 
-;;; comb-2-way-infinite accepts (delay it)
-(defun comb-2-way-infinite0 (i j)
-  (let ((clone-j (make-cloner j)))
-    (chain (map-iter (lambda (n) 
-                       (let ((clone-i (make-cloner i)))
-                       (chain (take (map-iter 
-                                (lambda (x) 
-                                  (take (map-iter 
-                                          (lambda (y) (cons x y)) 
-                                          (funcall clone-j)) n)) 
-                                (funcall clone-i)) n))))
-                     (counter 1)))))
+Iterating backwards is interesting -- all we need to do though is just create a list, and push to it.
+Then call (iter-to-list), which will iterate the list forward. Once we have the two iterators, we zip
+them, and we're done.
 
-;;; comb-2-way-infinite accepts (delay it)
-(defun comb-2-way-infinite1 (i j)
-  (let ((clone-i (make-cloner i)) (clone-j (make-cloner j)))
-    (chain (map-iter (lambda (x) 
-                       (chain (map-iter 
-                                (lambda (n) 
-                                  (take (map-iter 
-                                          (lambda (y) (cons x y)) 
-                                          (funcall clone-j)) n)) 
-                                (counter 1))))
-                     (funcall clone-i)))))
+Let's look at the backward iterator in more detail -- I don't want to use a generic reversed function,
+as then it will be O(x^2) each x.
 
-(defun comb-2-way-infinite2 (i j)
-  (let ((clone-i (make-cloner i)) (clone-j (make-cloner j)))
-    (chain (map-iter (lambda (n) 
-                       (chain (take (map-iter 
-                                (lambda (x) 
-                                  (map-iter 
-                                          (lambda (y) (cons x y)) 
-                                          (funcall clone-j))) (funcall clone-i)) 
-                                n)))
-                     (counter 1)))))
+Okay, I wrapped the functionality in accumulate-rev. The rest should be easy.
 
+|#
 
-(defun comb-2-way-infinite3 (i j)
-  (let ((clone-i (make-cloner i)) (clone-j (make-cloner j)))
-    (chain (map-iter (lambda (n) 
-                       (take (chain (map-iter (lambda (x) 
-                                                (map-iter 
-                                                  (lambda (y) (cons x y)) 
-                                                  (funcall clone-j)))
-                                              (funcall clone-i)))
-                                n))
-                     (counter 1)))))
+(defun comb-2-way-infinite (i j)
+  (zip
+    (chain (accumulate-rev i))
+    (chain (accumulate j))))
+
+(defun comb-n-way-infinite (iterators)
+  (reduce #'comb-2-way-infinite iterators :from-end t :initial-value (repeat nil 1)))
+
+(defun comb-2-way-inf-fast (i j limit)
+  (let ((i-rev (list (funcall i)))
+        (j-fwd (list (funcall j)))
+        (j-ref nil)
+        (i-ref nil)
+        (cnt 0))
+    (loop for n from 1
+          do (progn (setf i-ref i-rev) 
+                    (setf j-ref j-fwd)
+                    (push (funcall i) i-rev)
+                    (loop for k from 0 to n do
+                          (when (= k (1- n)) (nconc j-ref (list (funcall j))))
+                          (cons (car i-ref) (car j-ref))
+                          (incf cnt)
+                          (when (>= cnt limit) (return))
+                          (pop i-ref) (pop j-ref))))))
+
 
 

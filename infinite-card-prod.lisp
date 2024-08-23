@@ -1,0 +1,20 @@
+(defun naturals ()
+  (let ((n 0)) (lambda () (prog1 n (incf n)))))
+
+(defun take (iter n)
+  (loop repeat n collect (funcall iter)))
+
+(defun infinite-card-prod (i j)
+  (let ((i-reversed (make-array 0 :adjustable t :fill-pointer 0))
+        (j-forward (make-array 0 :adjustable t :fill-pointer 0))
+        (n 0) (k 0))
+    (lambda ()
+      (when (= k n)
+        (incf n)
+        (vector-push-extend (funcall i) i-reversed)
+        (vector-push-extend (funcall j) j-forward)
+        (setf k 0))
+      (prog1 (cons (aref i-reversed (- n 1 k)) (aref j-forward k))
+        (incf k)))))
+        
+; (take (infinite-card-prod (naturals) (naturals)) 7) => ((0 . 0) (1 . 0) (0 . 1) (2 . 0) (1 . 1) (0 . 2) (3 . 0)) 
